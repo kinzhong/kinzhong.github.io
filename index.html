@@ -577,7 +577,6 @@
   </section>
   <!-- End Resume Section -->
 
-  <!-- TODO - BLOG -->
   <!-- ======= Blog Section ======= -->
   <section id="blog" class="blog">
     <script src="assets/js/articles.js"></script>
@@ -593,8 +592,8 @@
           <span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
           <div class="date">26 June, 2021</div>
           <p>
-            <span w3-include-html="articles/A Comprehensive Guide to Fuzzing.html"></span> 
-            <a href="https://github.com/kinzhong/cddc2020-write-up">Read More...</a>
+            <span get-article-summary="articles/A Comprehensive Guide to Fuzzing.html"></span> 
+            <a href="#article1" onclick="loadArticle('articles/full.html');return false;">Read More...</a>
           </p>
         </div>
         <div class="article">
@@ -602,19 +601,8 @@
           <span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
           <div class="date">26 June, 2021</div>
           <p>
-            <div w3-include-html="articles/A Comprehensive Guide to Fuzzing2.html"></div> 
-            <a href="https://github.com/kinzhong/cddc2020-write-up">Read More...</a>
-          </p>
-        </div>
-        <div class="article">
-          <div class="title">A Comprehensive Guide to Fuzzing!</div>
-          <span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
-          <div class="date">26 June, 2021</div>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin lacinia interdum dui non scelerisque. Pellentesque dictum diam nunc, eu semper quam sagittis eget. Vestibulum maximus convallis vehicula. Aliquam vehicula ipsum et euismod dapibus. Aenean non massa eu tortor porttitor volutpat ut vel justo. Fusce et tempor turpis. Etiam volutpat quis diam vel aliquam. Maecenas convallis scelerisque mi, vitae volutpat orci ultrices ac. Nunc laoreet venenatis dignissim. Praesent id libero at augue mattis iaculis. Curabitur non lacinia neque, vitae maximus risus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Curabitur id metus vitae sapien congue molestie. Etiam sit amet erat porta, dignissim tellus sit amet, placerat tellus.
-          
-            <a href="https://github.com/kinzhong/cddc2020-write-up">Read More...</a>
-            <div w3-include-html="articles/content.html"></div> 
+            <div get-article-summary="articles/A Comprehensive Guide to Fuzzing2.html"></div> 
+            <a href="#article1" onclick="loadArticle('articles/full.html');return false;">Read More...</a>
           </p>
         </div>
         <div class="article">
@@ -624,10 +612,19 @@
           <p>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin lacinia interdum dui non scelerisque. Pellentesque dictum diam nunc, eu semper quam sagittis eget. Vestibulum maximus convallis vehicula. Aliquam vehicula ipsum et euismod dapibus. Aenean non massa eu tortor porttitor volutpat ut vel justo. Fusce et tempor turpis. Etiam volutpat quis diam vel aliquam. Maecenas convallis scelerisque mi, vitae volutpat orci ultrices ac. Nunc laoreet venenatis dignissim. Praesent id libero at augue mattis iaculis. Curabitur non lacinia neque, vitae maximus risus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Curabitur id metus vitae sapien congue molestie. Etiam sit amet erat porta, dignissim tellus sit amet, placerat tellus.
           
-            <a href="https://github.com/kinzhong/cddc2020-write-up">Read More...</a>
+            <a href="#article1" onclick="loadArticle('articles/full.html');return false;">Read More...</a>
           </p>
-          <div w3-include-html="articles/content.html"></div> 
-          <script> includeHTML(); </script>
+        </div>
+        <div class="article">
+          <div class="title">A Comprehensive Guide to Fuzzing!</div>
+          <span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
+          <div class="date">26 June, 2021</div>
+          <p>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin lacinia interdum dui non scelerisque. Pellentesque dictum diam nunc, eu semper quam sagittis eget. Vestibulum maximus convallis vehicula. Aliquam vehicula ipsum et euismod dapibus. Aenean non massa eu tortor porttitor volutpat ut vel justo. Fusce et tempor turpis. Etiam volutpat quis diam vel aliquam. Maecenas convallis scelerisque mi, vitae volutpat orci ultrices ac. Nunc laoreet venenatis dignissim. Praesent id libero at augue mattis iaculis. Curabitur non lacinia neque, vitae maximus risus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Curabitur id metus vitae sapien congue molestie. Etiam sit amet erat porta, dignissim tellus sit amet, placerat tellus.
+          
+          </p>
+          <a href="#article1" onclick="loadArticle('articles/full.html');return false;">Read More...</a>
+          <script> getArticleSummary(); </script>
 
         </div>
 
@@ -642,6 +639,14 @@
     </div>
   </section>
   <!-- End Blog Section -->
+
+  <section id="articles" class="articles">
+    <div class="container">
+      <div class="back" title="Back"><a class="nav-link" href=#blog><span class="iconify" data-icon="entypo:arrow-left" data-inline="false"></span></a></div>
+      
+      <div id="get-article" class="get-article"></div> 
+    </div>
+  </section>
 
   <!-- Vendor JS Files -->
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>

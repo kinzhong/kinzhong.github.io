@@ -975,3 +975,68 @@ section .container {
   background: var(--section-underline);
   margin: 4px 0px;
 }
+
+/*--------------------------------------------------------------
+# Articles
+--------------------------------------------------------------*/
+
+.articles .back {
+  background: var(--icon-background);
+  border-radius: 40%;
+  width: 60px;
+  height: 40px;
+  margin-left: -10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.articles .back .nav-link{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.articles .back .nav-link .iconify{
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--icon-color);
+
+}
+
+.articles .back:hover {
+  background: var(--icon-hover);
+  text-decoration: none;
+}
+
+
+.articles .get-article .title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  /* text-transform: uppercase; */
+  color: var(--text-color);
+  font-family: "Poppins", sans-serif;
+}
+
+.articles .get-article .iconify {
+  font-size: 18px;
+  color: var(--resume-item);
+}
+
+.articles .get-article .date {
+  line-height: 18px;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  color: var(--resume-item);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.articles .get-article p{
+  margin-top: 10px;
+  line-height: 180%;
+  font-size: var(--content-font-size);
+}
