@@ -1035,8 +1035,51 @@ section .container {
   vertical-align: middle;
 }
 
+.articles .get-article h1{
+  margin-top: 20px;
+  font-size: 23px;
+  color: var(--text-color);
+  font-family: "Raleway", sans-serif;
+  font-weight: bolder;
+}
+
+
 .articles .get-article p{
   margin-top: 10px;
   line-height: 180%;
   font-size: var(--content-font-size);
+}
+
+.articles .get-article ol{
+
+}
+
+.articles .get-article ol li{
+  line-height: 200%;
+  font-size: var(--content-font-size);
+}
+
+.articles .get-article .center{
+  margin-top: 10px;
+  text-align: center;
+  font-size: var(--content-font-size);
+  font-style: italic;
+}
+
+
+.articles .get-article code{
+  margin: 10px 0px;
+  padding: 10px 20px;
+  line-height: 180%;
+  display: block;
+  background-color: #202020;
+  color:var(--underline);
+  font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New;
+}
+
+.articles .get-article img{
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
 }
