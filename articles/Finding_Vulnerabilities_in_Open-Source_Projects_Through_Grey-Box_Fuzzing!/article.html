@@ -2,9 +2,9 @@
 <span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
 <div class="date">30 June, 2021</div>
 <p>
-    Organisations are increasingly relying on open-source code and components to increase speed and costs. 
+    Organisations are increasingly relying on open-source code and components to increase production speed and reduce costs. 
     However, the public nature of the source code allows easier discovery of software vulnerabilities as compared to proprietary software. 
-    If left unpatched, this can be exploited by malicious actors.
+    If left unpatched, vulnerabilities originating from these software may have far-reaching consequences, seen in prominent cases such as HeartBleed and Shellshock.
 </p>
 <p>
     In this blog post series, we will be examining how grey-box fuzzing can be used to discover vulnerabilities in open-source projects. 
@@ -17,13 +17,13 @@
 </p>
 <h1>Grex-Box Mutational Fuzzing</h1>
 <p>
-    Rather than blinding testing random inputs, grey-box mutational fuzzers generates new test cases by applying various mutation strategies on existing test cases.
-     This mutation process is guided by using data collected from the program such as code coverage. 
+    Rather than blinding testing randomly generated inputs, grey-box mutational fuzzers generates new test cases by modifying existing test cases slightly based on various mutation strategies.
+    This mutation process is guided by lightweight code instrumentation which provide coverage feedback on all executed test cases.
+    Thus, if the execution of a test case results in new code paths, crashes, or hangs, then the test case is further mutated to generate more test cases for testing. 
+    Otherwise, the test case is discarded. This cycle keeps repeating until terminated by the user. 
 </p>
 <p>
-    By measuring the code coverage achieved in each test case, the fuzzer can determine which test cases have explored new code edges. 
-    These test cases are then mutated to generate more test cases for testing. This cycle keeps repeating until terminated by the user. 
-    Thus, as the process continues, the fuzzer will progressively explore and test basic blocks deeper in the code and increase the code coverage. 
+    Thus, as the process continues, the fuzzer will progressively explore and test basic blocks deeper into the code and increase the code coverage. 
     The GIF below illustrates the fuzzing process for AFL++.
 </p>
 <img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing!/process.gif">
@@ -35,7 +35,7 @@
 <p>
     AFL++ is one of the most popular state-of-the-art grey-box fuzzer. 
     Along with its predecessor, <a href="https://github.com/google/AFL/" target="_blank" rel="noopener noreferrer">AFL</a>, it has detected vulnerabilities in over hundreds of projects. 
-    It incorporates a collection of different fuzzing techniques and mutators which can be used to increase performance. 
+    It incorporates a collection of different fuzzing techniques and mutators which can be used to increase performance or reach certain code paths. 
     AFL++ is feedback driven, meaning it uses code coverage information through lightweight code instrumentation to effectively guide the fuzzer.
 </p>
 <h1>Setting up AFL++</h1>
@@ -71,5 +71,6 @@
     For my Final Year Project, I used the <a href="https://nvd.nist.gov/vuln/data-feeds" target="_blank" rel="noopener noreferrer">NVD CVE Database</a> to find middle sized open-source projects and manually filtered out unsuitable projects. 
 </p>
 <p>
+    And with that, we are ready to proceed to fuzzing the target. 
     In the next blog post, we will go through the fuzzing process and look at fuzzing <a href="https://github.com/LibreDWG/libredwg" target="_blank" rel="noopener noreferrer">LibreDWG</a> as a practical example. See you there!
 </p>
