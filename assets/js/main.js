@@ -50,9 +50,9 @@
   })
 
   /**
-   * Scrool with ofset on links with a class name .scrollto
+   * Scroll with offset on links with a class name .scrollto
    */
-  on('click', '#navbar .nav-link', function(e) {
+  on('click', '.nav-link', function(e) {
 
     let section = select(this.hash)
     if (section) {
@@ -79,10 +79,8 @@
       if (this.hash == '#header') {
         if (!mq.matches) {
           var bar = document.getElementById("side-social-bar");
-          bar.classList.remove("fade-in");
-          bar.classList.add("fade-out");
-          // document.getElementById("side-social-bar").style.visibility = "hidden";
-          // document.getElementById("side-social-bar").style.transition = "opacity: 0;";
+          bar.classList.remove("fade-in")
+          bar.classList.add("fade-out")
         }
         header.classList.remove('header-top')
         sections.forEach((item) => {
@@ -92,10 +90,9 @@
       }
       if(this.hash == '#about' || this.hash == "#resume" || this.hash == "#blog") {
         if (!mq.matches) {
-          // document.getElementById("side-social-bar").style.visibility = "visible";
-          var bar = document.getElementById("side-social-bar");
-          bar.classList.remove("fade-out");
-          bar.classList.add("fade-in");
+          var bar = document.getElementById("side-social-bar")
+          bar.classList.remove("fade-out")
+          bar.classList.add("fade-in")
         }
       }
 
@@ -194,4 +191,4 @@
     });
   }
 
-})()
+})();

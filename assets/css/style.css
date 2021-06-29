@@ -557,6 +557,10 @@ section .container {
   margin-bottom: 0;
 }
 
+.about-me a:hover{
+  text-decoration: underline;
+}
+
 /*--------------------------------------------------------------
 # Skills
 --------------------------------------------------------------*/
@@ -785,7 +789,6 @@ section .container {
   transform: rotateY(0deg);
 }
 
-
 .flip .front img {
   max-height: 200px; 
   max-width: 276px;
@@ -901,6 +904,10 @@ section .container {
   font-family: var(--body-font);
 }
 
+.resume .resume-item p {
+  font-weight: 300px;
+}
+
 .resume .resume-item:last-child {
   padding-bottom: 0;
 }
@@ -920,3 +927,159 @@ section .container {
 /*--------------------------------------------------------------
 # Blog
 --------------------------------------------------------------*/
+.blog .article {
+  padding-left: 20px;
+  padding-right: 40px;
+}
+
+.blog .article .title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  /* text-transform: uppercase; */
+  color: var(--text-color);
+  font-family: "Poppins", sans-serif;
+}
+
+.blog .article .iconify {
+  font-size: 18px;
+  color: var(--resume-item);
+}
+
+.blog .article .date {
+  line-height: 18px;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  color: var(--resume-item);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.blog .article p {
+  margin-top: 10px;
+  line-height: 180%;
+  font-size: var(--content-font-size);
+}
+
+.blog .article a:hover {
+  text-decoration: underline;
+}
+
+.blog .article:not(:last-child)::after {
+  content: "";
+  width: 100%;
+  height: 1px;
+  display: inline-block;
+  background: var(--section-underline);
+  margin: 4px 0px;
+}
+
+/*--------------------------------------------------------------
+# Articles
+--------------------------------------------------------------*/
+
+.articles .back {
+  background: var(--icon-background);
+  border-radius: 40%;
+  width: 60px;
+  height: 40px;
+  margin-left: -10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.articles .back .nav-link{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.articles .back .nav-link .iconify{
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--icon-color);
+
+}
+
+.articles .back:hover {
+  background: var(--icon-hover);
+  text-decoration: none;
+}
+
+
+.articles .get-article .title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  /* text-transform: uppercase; */
+  color: var(--text-color);
+  font-family: "Poppins", sans-serif;
+}
+
+.articles .get-article .iconify {
+  font-size: 18px;
+  color: var(--resume-item);
+}
+
+.articles .get-article .date {
+  line-height: 18px;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  color: var(--resume-item);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.articles .get-article h1{
+  margin-top: 20px;
+  font-size: 23px;
+  color: var(--text-color);
+  font-family: "Raleway", sans-serif;
+  font-weight: bolder;
+}
+
+
+.articles .get-article p{
+  margin-top: 10px;
+  line-height: 180%;
+  font-size: var(--content-font-size);
+}
+
+.articles .get-article ol{
+
+}
+
+.articles .get-article ol li{
+  line-height: 200%;
+  font-size: var(--content-font-size);
+}
+
+.articles .get-article .center{
+  margin-top: 10px;
+  text-align: center;
+  font-size: var(--content-font-size);
+  font-style: italic;
+}
+
+
+.articles .get-article code{
+  margin: 10px 0px;
+  padding: 10px 20px;
+  line-height: 180%;
+  display: block;
+  background-color: #202020;
+  color:var(--underline);
+  font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New;
+}
+
+.articles .get-article img{
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}

@@ -1,0 +1,75 @@
+<div class="title">Finding Vulnerabilities in Open-Source Projects Through Grey-Box Fuzzing! - Part 1</div>
+<span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
+<div class="date">30 June, 2021</div>
+<p>
+    Organisations are increasingly relying on open-source code and components to increase speed and costs. 
+    However, the public nature of the source code allows easier discovery of software vulnerabilities as compared to proprietary software. 
+    If left unpatched, this can be exploited by malicious actors.
+</p>
+<p>
+    In this blog post series, we will be examining how grey-box fuzzing can be used to discover vulnerabilities in open-source projects. 
+    Particularly, I will be sharing my research findings and developed tools from my grey-box fuzzing research, my personal attempts at fuzzing and the vulnerabilities discovered from these efforts. 
+    For the fuzzer, we will be exploring <a href="https://aflplus.plus/" target="_blank" rel="noopener noreferrer">AFL++</a>.
+</p>
+<h1>Firstly, What Is Fuzzing?</h1>
+<p>
+    Fuzzing is an automatic process for software testing. The general approach of fuzzing consists of generating randomised / pseudo-randomised inputs and executing these inputs on target program. If the fuzzer observes abnormal behaviour such as crashes and hangs, the inputs are retained to be analysed in greater detail. 
+</p>
+<h1>Grex-Box Mutational Fuzzing</h1>
+<p>
+    Rather than blinding testing random inputs, grey-box mutational fuzzers generates new test cases by applying various mutation strategies on existing test cases.
+     This mutation process is guided by using data collected from the program such as code coverage. 
+</p>
+<p>
+    By measuring the code coverage achieved in each test case, the fuzzer can determine which test cases have explored new code edges. 
+    These test cases are then mutated to generate more test cases for testing. This cycle keeps repeating until terminated by the user. 
+    Thus, as the process continues, the fuzzer will progressively explore and test basic blocks deeper in the code and increase the code coverage. 
+    The GIF below illustrates the fuzzing process for AFL++.
+</p>
+<img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing!/process.gif">
+<div class=center>AFL++ Fuzzing Strategy</div>
+<p>
+    From a user’s point of view, this is very useful as once the fuzzer is set up, we can keep testing the program without having to write any test cases!
+</p>
+<h1>AFL++</h1>
+<p>
+    AFL++ is one of the most popular state-of-the-art grey-box fuzzer. 
+    Along with its predecessor, <a href="https://github.com/google/AFL/" target="_blank" rel="noopener noreferrer">AFL</a>, it has detected vulnerabilities in over hundreds of projects. 
+    It incorporates a collection of different fuzzing techniques and mutators which can be used to increase performance. 
+    AFL++ is feedback driven, meaning it uses code coverage information through lightweight code instrumentation to effectively guide the fuzzer.
+</p>
+<h1>Setting up AFL++</h1>
+<p>
+    To install AFL++, please refer to the install instructions from their <a href="https://github.com/AFLplusplus/AFLplusplus" target="_blank" rel="noopener noreferrer">GitHub repository</a>. 
+    As of writing this post, the following commands can also be used.
+</p>
+<code>
+    sudo apt-get update <br>
+    sudo apt-get install -y build-essential python3-dev automake git flex bison libglib2.0-dev libpixman-1-dev python3-setuptools <br>
+    # try to install llvm 11 and install the distro default if that fails <br>
+    sudo apt-get install -y lld-11 llvm-11 llvm-11-dev clang-11 || sudo apt-get install -y lld llvm llvm-dev clang <br>
+    sudo apt-get install -y gcc-$(gcc --version|head -n1|sed 's/.* //'|sed 's/\..*//')-plugin-dev libstdc++-$(gcc --version|head -n1|sed 's/.* //'|sed 's/\..*//')-dev <br>
+    git clone https://github.com/AFLplusplus/AFLplusplus <br>
+    cd AFLplusplus <br>
+    make distrib <br>
+    sudo make install <br>
+</code>
+<h1>Finding Suitable Targets to Fuzz</h1>
+<p>
+    Before fuzzing, we first have to identify suitable open-source targets to fuzz. 
+    While this step may look trivial, it can be a tedious process as the targets have to be manually vetted. 
+    I recommend considering the following factors when deciding on a target:
+</p>
+<ol>
+    <li> Difficulty of writing a fuzzing harness (we will explore this in the next post!)</li>
+    <li> Additional hardware requirements</li>
+    <li> Internet connectivity requirements - avoid DoS attacks</li>
+    <li> Computational power - high computation results in low execution speed when fuzzing</li>
+    <li> Age of the project - vulnerabilities are more likely to exist in newer projects</li>
+</ol>
+<p>
+    For my Final Year Project, I used the <a href="https://nvd.nist.gov/vuln/data-feeds" target="_blank" rel="noopener noreferrer">NVD CVE Database</a> to find middle sized open-source projects and manually filtered out unsuitable projects. 
+</p>
+<p>
+    In the next blog post, we will go through the fuzzing process and look at fuzzing <a href="https://github.com/LibreDWG/libredwg" target="_blank" rel="noopener noreferrer">LibreDWG</a> as a practical example. See you there!
+</p>
