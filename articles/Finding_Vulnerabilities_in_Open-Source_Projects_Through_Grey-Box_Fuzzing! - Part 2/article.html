@@ -1,0 +1,242 @@
+<div class="title">Finding Vulnerabilities in Open-Source Projects Through Grey-Box Fuzzing! - Part 2</div>
+<span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
+<div class="date">4 July, 2021</div>
+<p>
+	In the previous blog, we installed AFL++ and looked for a target to fuzz. 
+	Now, we can move on to understanding the fuzzing methodology and start fuzzing! 
+	The methodology was developed using best practices that I have researched online as well as performing my own evaluation on fuzzing. 
+	At the end, we will apply this methodology to fuzz <a href="https://github.com/LibreDWG/libredwg" target="_blank" rel="noopener noreferrer">LibreDWG++</a>.
+</p>
+<h1>Fuzzing Methodology</h1>
+<p>
+	The methodology can be broken down into the following 6 stages:
+</p>
+<img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/fuzzing-methodology.png">
+<div class=center>Recommended Fuzzing Methodology</div>
+<h1>Stage 1 - Compiling and Instrumentation</h1>
+<p>
+	Firstly, we must compile and instrument the target which will result in a program that AFL can interact and test. 
+</p>
+<h2>Fuzzing Harness</h2>
+<p>
+	In the previous post, I mentioned that the difficulty of writing a fuzzing harness should be considered when deciding on a target. 
+	This is because not every repository comes with a binary / program that AFL can compile and fuzz with. Some repositories only host software libraries. 
+	In these cases, we have to write a small program which triggers the functionality that we want to test. 
+	This program is known as a <b>fuzzing harness</b>. 
+	A fuzzing harness can also be used to focus on fuzzing a specific function. 
+	It can also improve fuzzing performance as by removing irrelevant performance heavy functions such as saving the output to the device (which we don’t really care about). 
+</p>
+<h2>Instrumentation</h2>
+<p>
+	For AFL++, instrumentation is performed using their custom compilers. 
+	These compilers insert code and flags which AFL uses to monitor the execution information to detect new code paths of the program. 
+	These compliers include afl-clang-lto, afl-clang-fast, afl-gcc-fast. 
+	Each compiler has significant performance differences, afl-clang-lto performs 10-25% faster than afl-clang-fast [1], and afl-clang-fast performs 10% faster than afl-gcc-fast [2]. 
+	However, afl-clang-lto can have a longer compile time. 
+	Thus, afl-clang-lto should be used unless the target fails to compile. 
+</p>
+<p>	
+	AFL++ also supports integration with AddressSanitizer.
+</p>
+<h2>What is AddressSanitizer?</h2>
+<p>
+	AddressSanitizer (ASan) is a compiler instrumentation module used to detect memory corruption errors in a binary program. 
+	AddressSanitizer can be integrated with many compilers such as GCC and Clang. 
+	It is commonly used to detect various bugs and vulnerabilities such as buffer overflow, null pointer dereference and memory leak. 
+</p>
+<p>	
+	AddressSanitizer is often used for crash triaging (finding out the underlying reason for the crash). 
+	However, we can also use ASan during fuzzing. 
+	This can increase the chance of finding vulnerabilities such as heap buffer overflows at the cost of increased virtual memory usage especially on 64-bit systems [3]. 
+	This can supposedly cause system instability. However, I personally did not encounter any issues. 
+</p>
+<p>	
+	If you face any system instability such as a system crash during fuzzing, you should either not use ASan or compile the binary in 32-bit mode and set a memory limit using the -m [limit in MB] when running AFL++.
+</p>
+
+<h2>Persistent Mode</h2>
+<p>
+	Lastly, we can fuzz using persistent mode [4] to improve the fuzzing speed significantly (10 – 20 times faster!). 
+	AFL++ does have a good and simple <a href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md" target="_blank" rel="noopener noreferrer">explanation</a> of how it works so I will not repeat it. 
+	But to summarise, this mode reduces the overhead from process forking by fuzzing the functionality in a loop in the program rather than continuously forking out new processes.
+</p>
+<p>	
+	To enable this function, we have to add a few lines of code to the source file which we will see in the practical example.
+</p>
+
+<h1>Stage 2 - Determining Command Line Options</h1>
+<p>
+	Next, if you have not written the fuzzing harness to specify a functionality or if you applied the persistent mode to the entire program, we have to determine what command line options to use. 
+	This is because for many command-line based programs, the options specified can have a large impact on the code coverage that fuzzer can achieve. 
+	Thus, it is important to have a basic understanding of how the program function. 
+	To widen the scope, supplementary options with differing functionalities should be added. 
+</p>
+
+<h1>Stage 3 - Obtaining & Optimizing Seed Corpus</h1>
+<p>
+	Before fuzzing can start, AFL requires a set of initial test cases. 
+	This is known as the <b>seed corpus</b> and the performance of the fuzzer greatly depends on it. 
+</p>
+<p>
+	To have a good seed corpus, it is recommended that good examples (data inputs that are expected by the program) are used as the initial test cases. 
+	This is because most programs have input verification functions to check input data types. 
+	By using the data that is expected by the program, it lowers the number of mutations the fuzzer must make to reach deeper into the code. 
+	For example, if a PDF is expected but a non-PDF files are used, these test cases will fail the input verification. 
+	The fuzzer will have to continuously mutating inputs until the PDF signature is reached, wasting time and effort.
+</p>
+<p>
+	Also, test cases should be kept small (below 1kB) and should be functionally different [5]. 
+	This increases the performance of running the binary and chance of mutating into a test case that explores a new path. 
+</p>
+<h2>Where to Obtain Good Samples and How Many?</h2>
+<p>
+	Generally, samples can be obtained in the test directory of the target project’s repository. 
+	AFL also provides a small subset of common file types in the AFLplusplus/testcases/ directory. 
+	Lastly, samples can also be found online. The small repository https://github.com/mathiasbynens/small) by Mathias Bynens contains many small syntactically valid file formats. 
+</p>
+<p>
+	To reduce the time taken in the following optimisation process, the file size of the samples should not exceed 20KB. 
+	However, we recommend a file size of less than 5KB. 
+	Also, if the target binary takes in a common file type, we recommend obtaining 30 – 50 samples.
+</p>
+
+<h2>Optimising Test Cases</h2>
+<p>
+	To help with the optimisation process, AFL comes with a corpus minimisation tool, afl-cmin, and a test case minimisation tool, afl-tmin. 
+</p>
+<p>
+	afl-cmin identifies unnecessary test cases by running all the test cases with the target program and determines which test cases have duplicated code execution paths. 
+	These test cases are removed. This tool is particularly useful when dealing with a large amount of test cases. 
+	If many test cases were obtained, I suggest using an aggressive time-out (100 – 500 ms) to ensure that the corpus contains high performing test cases. 
+	In the situation where insufficient test cases are accepted, the timeout can be progressively increased.
+</p>
+<p>
+	afl-tmin, on the other hand, tries to reduce the size of a single test case by iteratively removing blocks of data while observing for any behavioural changes. 
+	This results in a smaller test case which will maintain the same behaviour when executed. 
+	Overall, this increases the efficiency of the fuzzer as mutation strategies have a higher chance of hitting a bug due to the small size of the test case. 
+	Also, lesser time and memory will be used by the binary to store and process the test case. 
+	However, afl-tmin is tremendously time-consuming. Thus, obtained test cases should be at most 50KB. 
+	To put things into perspective, in my experiments, 500KB testcases took more than 12 hours to minimise. 
+</p>
+<p>
+	To automate and simplify this process, my <a href="https://github.com/kinzhong/fuzzing-automation-tools/tree/main/test-case-optimiser" target="_blank" rel="noopener noreferrer">script</a> can be used. 
+	It combines afl-cmin and afl-tmin into a single step and utilises parallelisation to enhance performance.
+</p>
+<h1>Stage 4 - Fuzzing the Target</h1>
+<p>
+	With the fuzzing set-up complete, we can finally start fuzzing! 
+</p>
+<p>
+	Firstly, we have to determine which fuzzing techniques to use. AFL++ has incorporated many fuzzing techniques which can be found <a href="https://aflplus.plus/features/" target="_blank" rel="noopener noreferrer">here</a>. 
+	For this tutorial, we will be looking at, in my opinion, two of the most effective features, <a href="https://github.com/mboehme/aflfast" target="_blank" rel="noopener noreferrer">AFLFast’s power schedules</a> 
+	and the <a href="https://github.com/puppet-meteor/MOpt-AFL" target="_blank" rel="noopener noreferrer">MOpt mutator</a>. 
+</p>
+<p>
+	We will briefly examine how these two features work and the evaluation results but feel free to skip to the <b>Fuzzing Setup</b> below. 
+</p>
+<p>
+	TL;DR: AFLFast and AFLFast with MOpt outperformed normal AFL and MOpt in code coverage and number of unique bugs found.
+</p>
+<h2>How AFLFast Works</h2>
+<p>
+	AFLFast models their strategy based on Markov Chain Model and emphasises on low-frequency paths by generating more inputs on test cases that produce these results. 
+	It does so by assigning resources for input generation that is inversely proportional to the frequency of path. 
+	This results in test cases that have low frequency paths generating more inputs while test cases that have high frequency paths generating fewer inputs. 
+	AFLFast also selects test cases that are less chosen and have low frequency paths.
+</p>
+<h2>How MOpt Works</h2>
+<p>
+	MOpt uses a mutation scheduler which chooses the next mutation operator based on the Particle Swarm Optimization (PSO) algorithm. 
+	This algorithm is applied at low computational costs and finds an optimal possibility distribution of mutation operators. 
+	It also contains a pacemaker fuzzing mode which shortens the time spent on the deterministic stage and emphasises on the havoc and splicing stages. 
+	This is done by disabling the deterministic stage when no paths or new unique crashes are found after a period of time. 
+	This time period is configurable by users.
+</p>
+<h2>Personal Evaluation</h2>
+<p>
+	In my Final Year Project, I evaluated these fuzzing technique as well as the base AFL by fuzzing 12 open-source programs for 24 hours. 
+	These programs had diverse functionalities and varying types of inputs, which could hopefully represent a wider range of programs. 
+	This was done to see how the fuzzing techniques performed in general rather than in specific scenarios. 
+	The metrics used were the mean edge number (which tracks the number of transitions between basic blocks) and number of unique bugs found. 
+</p>
+<p>
+	For mean edge number, the graphs show the mean edge growth coverage against time with a 95% confidence interval as the colour bands. 
+</p>
+<img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/edge-coverage.PNG">
+<div class=center>Mean edge coverage growth over time</div>
+<p>
+	We can observe that AFLFast outperforms all the other techniques in half of the cases while performing adequately in all other cases except for avconv. 
+	AFLFast with MOpt also performs well as it achieves the second highest mean edge coverage in most cases.
+</p>
+<p>
+	For the number of unique bugs found, we examined the number of crashes found by the fuzzer and performed crash triaging to determine the number of unique bugs discovered.
+</p>
+<img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/unique-bugs.PNG">
+<div class=center>Total number of unique bugs discovered</div>
+<p>
+	Overall, considering both metrics, the results suggest that AFLFast and AFLFast with MOpt performs better than the other techniques.
+</p>
+<p>
+	Also, if you would like to conduct your own evaluations and visualise the edge coverage, check out my <a href="https://github.com/kinzhong/fuzzer-performance-visualiser" target="_blank" rel="noopener noreferrer">evaluation visualiser</a>.
+</p>
+<h2>Fuzzing Setup</h2>
+<p>
+	Now that we have established that AFLFast and AFLFast with MOpt had the best performance, we can move on to the fuzzing setup. 
+</p>
+<p>
+	Firstly, if parallelisation is employed using the -M (master) and -S (slave) options, we suggest using AFLFast for the master instance while each slave instance uses a different fuzzing technique such as MOpt, AFLFast with MOpt, and explore mode for AFLFast. 
+	However, all fuzzer instances must point to the same output directory using option -o. 
+</p>
+<p>
+	Overall, this strategy should discover more unique vulnerabilities as the usage of different techniques can test a wider set of test cases. 
+	This was observed in the evaluation where only a certain fuzzing technique was able to discover a crash. 
+	This strategy is also supported by the research conducted by EnFuzz [6] and the developers of AFL++.
+</p>
+<h1>References:</h1>
+<p>
+<a href="" target="_blank" rel="noopener noreferrer"></a>
+
+	[1] <a href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.lto.md" target="_blank" rel="noopener noreferrer">https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.lto.md</a><br>
+	[2] <a href="https://volatileminds.net/2015/07/01/advanced-afl-usage.html" target="_blank" rel="noopener noreferrer">https://volatileminds.net/2015/07/01/advanced-afl-usage.html</a><br>
+	[3] <a href="https://github.com/google/sanitizers/wiki/AddressSanitizer" target="_blank" rel="noopener noreferrer">https://github.com/google/sanitizers/wiki/AddressSanitizer</a> <br>
+	[4] <a href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md" target="_blank" rel="noopener noreferrer">https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md</a><br>
+	[5] <a href="https://github.com/google/AFL/blob/master/docs/perf_tips.txt" target="_blank" rel="noopener noreferrer">https://github.com/google/AFL/blob/master/docs/perf_tips.txt</a><br>
+	[6] <a href="https://www.usenix.org/system/files/sec19-chen-yuanliang.pdf" target="_blank" rel="noopener noreferrer">https://www.usenix.org/system/files/sec19-chen-yuanliang.pdf</a><br>
+</p>
+
+
+
+
+
+
+<code>
+    sudo apt-get update <br>
+    sudo apt-get install -y build-essential python3-dev automake git flex bison libglib2.0-dev libpixman-1-dev python3-setuptools <br>
+    # try to install llvm 11 and install the distro default if that fails <br>
+    sudo apt-get install -y lld-11 llvm-11 llvm-11-dev clang-11 || sudo apt-get install -y lld llvm llvm-dev clang <br>
+    sudo apt-get install -y gcc-$(gcc --version|head -n1|sed 's/.* //'|sed 's/\..*//')-plugin-dev libstdc++-$(gcc --version|head -n1|sed 's/.* //'|sed 's/\..*//')-dev <br>
+    git clone https://github.com/AFLplusplus/AFLplusplus <br>
+    cd AFLplusplus <br>
+    make distrib <br>
+    sudo make install <br>
+</code>
+<h1>Finding Suitable Targets to Fuzz</h1>
+<p>
+    Before fuzzing, we first have to identify suitable open-source targets to fuzz. 
+    While this step may look trivial, it can be a tedious process as the targets have to be manually vetted. 
+    I recommend considering the following factors when deciding on a target:
+</p>
+<ol>
+    <li> Difficulty of writing a fuzzing harness (we will explore this in the next post!)</li>
+    <li> Additional hardware requirements</li>
+    <li> Internet connectivity requirements - avoid DoS attacks</li>
+    <li> Computational power - high computation results in low execution speed when fuzzing</li>
+    <li> Age of the project - vulnerabilities are more likely to exist in newer projects</li>
+</ol>
+<p>
+    For my Final Year Project, I used the <a href="https://nvd.nist.gov/vuln/data-feeds" target="_blank" rel="noopener noreferrer">NVD CVE Database</a> to find middle sized open-source projects and manually filtered out unsuitable projects. 
+</p>
+<p>
+    And with that, we are ready to proceed to fuzzing the target. 
+    In the next blog post, we will go through the fuzzing process and look at fuzzing <a href="https://github.com/LibreDWG/libredwg" target="_blank" rel="noopener noreferrer">LibreDWG</a> as a practical example. See you there!
+</p>
