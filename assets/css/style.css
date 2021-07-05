@@ -470,7 +470,7 @@ section.section-show {
 
 section .container {
   background: var(--section-bg);
-  padding: 30px;
+  padding: 40px;
 }
 
 @media (max-width: 768px) {
@@ -868,6 +868,7 @@ section .container {
 
 .resume .resume-item {
   padding: 0 0 20px 20px;
+  margin-left: 7px;
   margin-top: -2px;
   border-left: 2px solid var(--resume-line);
   position: relative;
@@ -986,6 +987,7 @@ section .container {
   width: 60px;
   height: 40px;
   margin-left: -10px;
+  margin-top: -10px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1009,11 +1011,14 @@ section .container {
   text-decoration: none;
 }
 
+.articles .get-article{
+  padding: 0 20px;
+}
 
 .articles .get-article .title {
   font-size: 26px;
   font-weight: 700;
-  margin-top: 20px;
+  margin-top: 10px;
   margin-bottom: 10px;
   /* text-transform: uppercase; */
   color: var(--text-color);
@@ -1036,23 +1041,38 @@ section .container {
 }
 
 .articles .get-article h1{
-  margin-top: 20px;
+  margin-top: 25px;
+  margin-bottom: 15px;
   font-size: 23px;
   color: var(--text-color);
   font-family: "Raleway", sans-serif;
   font-weight: bolder;
 }
 
+.articles .get-article h2{
+  margin-top: 20px;
+  margin-bottom: 15px;
+  font-size: 20px;
+  color: var(--text-color);
+  font-family: "Raleway", sans-serif;
+  font-weight: bolder;
+}
 
 .articles .get-article p{
-  margin-top: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
   line-height: 180%;
   font-size: var(--content-font-size);
 }
 
-.articles .get-article ol{
-
+.articles .get-article a{
+  word-wrap: break-word;
 }
+
+.articles .get-article a:hover{
+  text-decoration: underline;
+}
+
 
 .articles .get-article ol li{
   line-height: 200%;
@@ -1068,18 +1088,16 @@ section .container {
 
 
 .articles .get-article code{
-  margin: 10px 0px;
-  padding: 10px 20px;
-  line-height: 180%;
-  display: block;
-  background-color: #202020;
-  color:var(--underline);
-  font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New;
+  background-color: #272822;
+  color: #f8f8f2;
+  font-size: var(--content-font-size);
 }
 
 .articles .get-article img{
   display: block;
   margin-left: auto;
   margin-right: auto;
-  width: 50%;
+}
+.articles .get-article pre{
+  margin-bottom: 10px;
 }
