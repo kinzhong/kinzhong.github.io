@@ -21,14 +21,13 @@ function getArticleSummary() {
       }      
       xhttp.open("GET", file, true);
       xhttp.send();
-      /*exit the function:*/
       return;
     }
   }
 };
 
 
-function loadArticle(articlePath){
+function loadArticle(articlePath, callback){
 
   const select = (el, all = false) => {
     el = el.trim()
@@ -55,9 +54,9 @@ function loadArticle(articlePath){
         if (this.status == 404) {articleDiv.innerHTML = "Page not found.";}
       }
     }
-    xhttp.open("GET", articlePath, true);
-    xhttp.send();
-    /*exit the function:*/
+    xhttp.open("GET", articlePath, false);
+    xhttp.send()
+    Prism.highlightAll();    
     return;
   }
 

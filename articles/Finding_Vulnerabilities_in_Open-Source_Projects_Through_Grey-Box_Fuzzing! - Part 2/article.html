@@ -1,17 +1,19 @@
 <div class="title">Finding Vulnerabilities in Open-Source Projects Through Grey-Box Fuzzing! - Part 2</div>
 <span class="iconify" data-icon="ant-design:clock-circle-filled" data-inline="false"></span>
-<div class="date">4 July, 2021</div>
+<div class="date">5 July, 2021</div>
+
 <p>
 	In the previous blog, we installed AFL++ and looked for a target to fuzz. 
 	Now, we can move on to understanding the fuzzing methodology and start fuzzing! 
 	The methodology was developed using best practices that I have researched online as well as performing my own evaluation on fuzzing. 
-	At the end, we will apply this methodology to fuzz <a href="https://github.com/LibreDWG/libredwg" target="_blank" rel="noopener noreferrer">LibreDWG++</a>.
+	Using this methodology, I was able to find 37 vulnerabilities in 6 widely used open-source libraries and 8 were assigned CVE IDs. 
+	While going through the methodology, we will apply the concepts to fuzz a target, <a href="https://github.com/LibreDWG/libredwg" target="_blank" rel="noopener noreferrer">LibreDWG</a> version 0.12.
 </p>
 <h1>Fuzzing Methodology</h1>
 <p>
 	The methodology can be broken down into the following 6 stages:
 </p>
-<img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/fuzzing-methodology.png">
+<img style="width:80%;" src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/fuzzing-methodology.png" class="img-fluid">
 <div class=center>Recommended Fuzzing Methodology</div>
 <h1>Stage 1 - Compiling and Instrumentation</h1>
 <p>
@@ -61,9 +63,85 @@
 	But to summarise, this mode reduces the overhead from process forking by fuzzing the functionality in a loop in the program rather than continuously forking out new processes.
 </p>
 <p>	
-	To enable this function, we have to add a few lines of code to the source file which we will see in the practical example.
+	To enable this function, we have to add a few lines of code to the source file which we will see in the practical example below.
 </p>
 
+<h2>Compiling LibreDWG</h2>
+<p>
+	Firstly, we will clone the LibreDWG repository and checkout version 0.12.
+</p>
+<pre><code class="language-shell-session">$ git clone https://github.com/LibreDWG/libredwg.git && cd libredwg/
+$ git checkout cc1abd8
+</code></pre>
+<p>
+	Next, the instructions on how to compile should be in the README. 
+	These instructions should be followed closely. 
+	To use AFL++ compliers, we will modify the environment variables, CC specifies the C compiler to be used, CXX specifies the C++ compiler to be used, and AFL_USE_ASAN=1 indicates that ASan should be used. 
+	For the AFL compiler, we will try using afl-clang-lto first. 
+	Lastly, we have to always ensure that the target is statically compiled. 
+	This is achieved using --disable-shared or --enable-shared=no for autoconf-based configure scripts.
+</p>
+<pre><code class="language-shell-session">$ sh ./autogen.sh
+$ AFL_USE_ASAN=1 ./configure CC=/home/kinzhong/AFLplusplus/afl-clang-lto CXX=/home/kinzhong/AFLplusplus/afl-clang-lto++ --disable-shared
+$ AFL_USE_ASAN=1 make
+</code></pre>
+<p>
+	Once it is compiled, programs/ directory should contain all the programs that LibreDWG come with. For this tutorial, we will be targeting dwgread. We can use file to verify it is an ELF executable
+</p>
+<pre><code class="language-shell-session">$ file programs/dwgread
+programs/dwgread: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, ...
+</code></pre>
+<p>
+	We can proceed with fuzzing this binary, but I would recommend using the Persistent Mode feature. 
+	As we will see later, this feature increased the execution speed by 10 times!
+</p>
+<p>
+	To enable this feature, we have to modify the source code of dwgread. 
+	It would be good to reference the <a href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md " target="_blank" rel="noopener noreferrer">Persistent Mode documentation</a> as well. 
+	Firstly, we will remove the dwgread binary so that when we run make, the binary will be recompiled with the changes.
+</p>
+<pre><code class="language-shell-session">$ rm programs/dwgread</code></pre>
+<p>
+	Next, open dwgread.c and add in the Persistent Mode code as shown.
+</p>
+<pre><code class="language-c">int main (int argc, char *argv[])	{
+	while (__AFL_LOOP(1000)){
+	int i = 1;
+	// ...
+	}
+	return 0; //Changed from return error >= DWG_ERR_CRITICAL ? 1 : 0;
+}
+</code></pre>
+<p>
+	Now let us recompile the binary
+</p>
+<pre><code class="language-shell-session">$ AFL_USE_ASAN=1 make #This will fail!
+</code></pre>
+<p>
+	However, this build fails with afl-clang-lto. Thus, we will try compiling using afl-clang-fast.
+</p>
+<pre><code class="language-shell-session">$ make clean<br>
+$ AFL_USE_ASAN=1 ./configure CC=/home/kinzhong/AFLplusplus/afl-clang-fast CXX=/home/kinzhong/AFLplusplus/afl-clang-fast++ --disable-shared<br>
+$ AFL_USE_ASAN=1 make<br>
+$ file programs/dwgread<br>
+programs/dwgread: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, ...<br>
+</code></pre>
+<p>
+	Comparing it against the normal binary, we can see that there is a 10x performance boost!
+</p>
+<div class="row">
+	<div class="col-md-6 col-sm-12">
+		<img style="width: 100%" src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/forking-method.PNG" class="img-fluid">
+		<div class=center>No Persistent Mode with afl-clang-lto</div>
+	</div>
+	<div class="col-md-6 col-sm-12">
+		<img style="width: 100%" src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/persistent-mode.PNG" class="img-fluid">
+		<div class=center>Persistent Mode with afl-clang-fast</div>
+	</div>
+</div>
+<p>
+	Now, the tough part is over and we have a binary that we can fuzz with!
+</p>
 <h1>Stage 2 - Determining Command Line Options</h1>
 <p>
 	Next, if you have not written the fuzzing harness to specify a functionality or if you applied the persistent mode to the entire program, we have to determine what command line options to use. 
@@ -71,7 +149,19 @@
 	Thus, it is important to have a basic understanding of how the program function. 
 	To widen the scope, supplementary options with differing functionalities should be added. 
 </p>
-
+<h2>Determining Options for DWGRead</h2>
+<p>
+	To examine the options, we can run the binary with the --help flag. 
+</p>
+<pre><code class="language-shell-session">$ ./programs/dwgread_persistent --help
+</code></pre>
+<p>
+	We observe that it takes in a DWG file, changes it into another format and outputs it to a file or stdout. For the format, we will use JSON. 
+	Since we do not want to save the output, we should set the output to /dev/null. Having it output to stdout could also slow down the fuzzing process. 
+	Thus, the command line options used is as shown.
+</p>
+<pre><code class="language-shell-session">$ dwgread -O JSON -o /dev/null
+</code></pre>
 <h1>Stage 3 - Obtaining & Optimizing Seed Corpus</h1>
 <p>
 	Before fuzzing can start, AFL requires a set of initial test cases. 
@@ -122,6 +212,48 @@
 	To automate and simplify this process, my <a href="https://github.com/kinzhong/fuzzing-automation-tools/tree/main/test-case-optimiser" target="_blank" rel="noopener noreferrer">script</a> can be used. 
 	It combines afl-cmin and afl-tmin into a single step and utilises parallelisation to enhance performance.
 </p>
+
+<h2>Seed Corpus for DWGRead</h2>
+<p>
+	For this repository, the libredwg/test/test-data/ contains DWG files we can use for samples. We also remove files that are over 40KB.
+</p>
+<pre><code class="language-shell-session">$ mkdir in
+$ cp test/test-data/*.dwg in/
+$ cp test/test-data/*/*.dwg in/
+$ ls -lh in
+total 112
+-rw-r--r-- 2 root root 40591 Jul  4 09:49 LiveSection1.dwg
+-rw-r--r-- 2 root root 22027 Jul  4 09:49 sample_2000.dwg
+-rw-r--r-- 2 root root 19848 Jul  4 09:49 sample_2018.dwg
+-rw-r--r-- 2 root root 26840 Jul  4 09:49 v.dwg
+$ find in/ -size +40k -delete
+</code></pre>
+<p>
+	We should be left with 4 files as the corpus, usually I would recommend supplementing the corpus with more files but in this tutorial, it is not necessary to find the vulnerabilites.
+</p>
+<p>
+	Next, to optimise the seed corpus, we have to apply afl-cmin to the in/ directory and afl-tmin to each file. 
+	You could manually run it, but I recommend using my script to automate this process. 
+</p>
+
+<pre><code class="language-shell-session">$ git clone https://github.com/kinzhong/fuzzing-automation-tools.git ~/fuzzing-automation-tools
+$ chmod +x ~/fuzzing-automation-tools/test-case-optimiser/test-case-optimiser.sh
+$ ~/fuzzing-automation-tools/test-case-optimiser/test-case-optimiser.sh -h
+test-minimiser.sh - Runs afl-cmin and afl-tmin (parallelised) with no memory limits enabled.
+Usage: ./test-minimiser.sh [input_dir] [output_dir] [cores] [timeout] ["./AFL-INSTRUMENTED-PROGRAM @@"]
+$ </code>~/fuzzing-automation-tools/test-case-optimiser/test-case-optimiser.sh <code class="language-none">in in_minimised/ 2 500 "./programs/dwgread -O JSON @@"</code>
+</pre>
+<p>
+	Once, the optimisation process has ended, we can observe that the corpus has indeed reduced slightly in size.
+</p>
+<pre><code class="language-shell-session">$ ls -lh in_minimised
+total 92
+-rw------- 1 root root 40471 Jul  4 11:32 LiveSection1.dwg.min
+-rw------- 1 root root 22027 Jul  4 11:11 sample_2000.dwg.min
+-rw------- 1 root root 19720 Jul  4 11:18 sample_2018.dwg.min
+-rw------- 1 root root  4850 Jul  4 11:12 v.dwg.min
+</code></pre>
+
 <h1>Stage 4 - Fuzzing the Target</h1>
 <p>
 	With the fuzzing set-up complete, we can finally start fuzzing! 
@@ -162,7 +294,7 @@
 <p>
 	For mean edge number, the graphs show the mean edge growth coverage against time with a 95% confidence interval as the colour bands. 
 </p>
-<img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/edge-coverage.PNG">
+<img style="width: 80%" src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/edge-coverage.PNG" class="img-fluid">
 <div class=center>Mean edge coverage growth over time</div>
 <p>
 	We can observe that AFLFast outperforms all the other techniques in half of the cases while performing adequately in all other cases except for avconv. 
@@ -171,7 +303,7 @@
 <p>
 	For the number of unique bugs found, we examined the number of crashes found by the fuzzer and performed crash triaging to determine the number of unique bugs discovered.
 </p>
-<img src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/unique-bugs.PNG">
+<img style="width: 50%" src="articles/Finding_Vulnerabilities_in_Open-Source_Projects_Through_Grey-Box_Fuzzing! - Part 2/unique-bugs.PNG" class="img-fluid">
 <div class=center>Total number of unique bugs discovered</div>
 <p>
 	Overall, considering both metrics, the results suggest that AFLFast and AFLFast with MOpt performs better than the other techniques.
@@ -192,51 +324,53 @@
 	This was observed in the evaluation where only a certain fuzzing technique was able to discover a crash. 
 	This strategy is also supported by the research conducted by EnFuzz [6] and the developers of AFL++.
 </p>
+
+<h2>Fuzzing the DWGRead</h2>
+<p>
+	To fuzz the target, I recommend using parallelization. To check how many cores can be used, run afl-gotcpu.
+</p>
+<pre><code class="language-shell-session">$ afl-gotcpu
+</code></pre>
+<p>
+	For this tutorial, I will be running 4 fuzzer instances. 
+	To use multiple cores, there will be one main fuzzer indicated using -M, and multiple secondary fuzzers indicated using -S. 
+	The main fuzzer should use the power schedule “exploit” as there seems to be some issue as seen in the <a href="https://github.com/mboehme/aflfast" target="_blank" rel="noopener noreferrer">AFLFast</a> READme. 
+	For the secondary fuzzers, for the reasons I highlighted earlier, I recommend using “fast” power schedule and MOpt but please experiment with other features to generate a wider set of test cases. 
+	AFL++ has <a href="https://github.com/AFLplusplus/AFLplusplus#b-using-multiple-cores" target="_blank" rel="noopener noreferrer">good documentation</a> on this. 
+	Lastly, we use <a href="https://help.ubuntu.com/community/Screen" target="_blank" rel="noopener noreferrer">screen</a> to help manage the instance. 
+	Please refer to this <a href="https://kapeli.com/cheat_sheets/screen.docset/Contents/Resources/Documents/index" target="_blank" rel="noopener noreferrer">cheat sheet</a> to understand the usage. 
+	Thus, the commands used were as follows.
+</p>
+<pre><code class="language-shell-session">$ screen -dmS f01 afl-fuzz -i in_minimised -o out -M main -p exploit programs/dwgread -O JSON @@
+$ screen -dmS f02 afl-fuzz -i in_minimised -o out -S fast-mopt-1 -L 0 programs/dwgread -O JSON @@
+$ screen -dmS f03 afl-fuzz -i in_minimised -o out -S fast-1 programs/dwgread -O JSON @@
+$ screen -dmS f04 afl-fuzz -i in_minimised -o out -S fast-2 programs/dwgread -O JSON @@
+$ screen -ls
+</code></pre>
+<p>
+	To check on your fuzzers, use afl-whatsup.
+</p>
+<pre><code class="language-shell-session">$ afl-whatsup out/
+</code></pre>
+<p>
+	To attach back to the session with a fuzzer instance
+</p>
+<pre><code class="language-shell-session">$ screen -r f01 # or any other screen names. Press Control + a + d together to detach.
+</code></pre>
+<p>
+	Now, we just have to wait for some crashes!<br>
+	In the next post, we will examine the final 2 stages of the fuzzing methodology and triage the crashes. See you there😊. 
+	<br>
+</p>
+
 <h1>References:</h1>
 <p>
 <a href="" target="_blank" rel="noopener noreferrer"></a>
 
-	[1] <a href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.lto.md" target="_blank" rel="noopener noreferrer">https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.lto.md</a><br>
-	[2] <a href="https://volatileminds.net/2015/07/01/advanced-afl-usage.html" target="_blank" rel="noopener noreferrer">https://volatileminds.net/2015/07/01/advanced-afl-usage.html</a><br>
-	[3] <a href="https://github.com/google/sanitizers/wiki/AddressSanitizer" target="_blank" rel="noopener noreferrer">https://github.com/google/sanitizers/wiki/AddressSanitizer</a> <br>
-	[4] <a href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md" target="_blank" rel="noopener noreferrer">https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md</a><br>
-	[5] <a href="https://github.com/google/AFL/blob/master/docs/perf_tips.txt" target="_blank" rel="noopener noreferrer">https://github.com/google/AFL/blob/master/docs/perf_tips.txt</a><br>
-	[6] <a href="https://www.usenix.org/system/files/sec19-chen-yuanliang.pdf" target="_blank" rel="noopener noreferrer">https://www.usenix.org/system/files/sec19-chen-yuanliang.pdf</a><br>
-</p>
-
-
-
-
-
-
-<code>
-    sudo apt-get update <br>
-    sudo apt-get install -y build-essential python3-dev automake git flex bison libglib2.0-dev libpixman-1-dev python3-setuptools <br>
-    # try to install llvm 11 and install the distro default if that fails <br>
-    sudo apt-get install -y lld-11 llvm-11 llvm-11-dev clang-11 || sudo apt-get install -y lld llvm llvm-dev clang <br>
-    sudo apt-get install -y gcc-$(gcc --version|head -n1|sed 's/.* //'|sed 's/\..*//')-plugin-dev libstdc++-$(gcc --version|head -n1|sed 's/.* //'|sed 's/\..*//')-dev <br>
-    git clone https://github.com/AFLplusplus/AFLplusplus <br>
-    cd AFLplusplus <br>
-    make distrib <br>
-    sudo make install <br>
-</code>
-<h1>Finding Suitable Targets to Fuzz</h1>
-<p>
-    Before fuzzing, we first have to identify suitable open-source targets to fuzz. 
-    While this step may look trivial, it can be a tedious process as the targets have to be manually vetted. 
-    I recommend considering the following factors when deciding on a target:
-</p>
-<ol>
-    <li> Difficulty of writing a fuzzing harness (we will explore this in the next post!)</li>
-    <li> Additional hardware requirements</li>
-    <li> Internet connectivity requirements - avoid DoS attacks</li>
-    <li> Computational power - high computation results in low execution speed when fuzzing</li>
-    <li> Age of the project - vulnerabilities are more likely to exist in newer projects</li>
-</ol>
-<p>
-    For my Final Year Project, I used the <a href="https://nvd.nist.gov/vuln/data-feeds" target="_blank" rel="noopener noreferrer">NVD CVE Database</a> to find middle sized open-source projects and manually filtered out unsuitable projects. 
-</p>
-<p>
-    And with that, we are ready to proceed to fuzzing the target. 
-    In the next blog post, we will go through the fuzzing process and look at fuzzing <a href="https://github.com/LibreDWG/libredwg" target="_blank" rel="noopener noreferrer">LibreDWG</a> as a practical example. See you there!
+	[1] <a style="color:white" href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.lto.md" target="_blank" rel="noopener noreferrer">https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.lto.md</a><br>
+	[2] <a style="color:white" href="https://volatileminds.net/2015/07/01/advanced-afl-usage.html" target="_blank" rel="noopener noreferrer">https://volatileminds.net/2015/07/01/advanced-afl-usage.html</a><br>
+	[3] <a style="color:white" href="https://github.com/google/sanitizers/wiki/AddressSanitizer" target="_blank" rel="noopener noreferrer">https://github.com/google/sanitizers/wiki/AddressSanitizer</a> <br>
+	[4] <a style="color:white" href="https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md" target="_blank" rel="noopener noreferrer">https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.persistent_mode.md</a><br>
+	[5] <a style="color:white" href="https://github.com/google/AFL/blob/master/docs/perf_tips.txt" target="_blank" rel="noopener noreferrer">https://github.com/google/AFL/blob/master/docs/perf_tips.txt</a><br>
+	[6] <a style="color:white" href="https://www.usenix.org/system/files/sec19-chen-yuanliang.pdf" target="_blank" rel="noopener noreferrer">https://www.usenix.org/system/files/sec19-chen-yuanliang.pdf</a><br>
 </p>
